@@ -1,0 +1,67 @@
+Transform: AWS::Serverless-2016-10-31
+Description: "Alexa framework for n00bs"
+
+Parameters:
+  BucketName:
+    Type: String
+
+Resources:
+  bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+
+# IAM roles
+  alexaFrameworkForn00bsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: "s3"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "s3:GetObject"
+                  - "s3:ListBucket"
+                Resource: !Sub arn:aws:s3:::${BucketName}/*
+
+# lambda functions
+
+  alexaFrameworkForN00bs:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: alexa-framework-for-n00bs
+      Description: "This is a framework for n00bs so they don't need to learn alexa but still be able to create skills"
+      Handler: main
+      Role: !GetAtt greengrassRole.Arn
+      Runtime: go1.x
+      MemorySize: 128
+      Timeout: 5
+      CodeUri: ./source/deployment.zip
+      Events:
+        Alexa:
+         Type: AlexaSkill
+      Environment:
+        Variables:
+          ALEXA_APPLICATION_ID: !Ref AlexaApplicationID
+
+#Outputs:
+#  lambdaarn:
+#    Description: The Lambda ARN that you will put in the alexa console
+#    Value: !Sub no-clue-what-to-use-atm
+
