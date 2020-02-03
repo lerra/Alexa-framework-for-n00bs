@@ -4,6 +4,9 @@ Description: "Alexa framework for n00bs"
 Parameters:
   BucketName:
     Type: String
+    
+  AlexaApplicationID:
+    Type: String
 
 Resources:
   bucket:
@@ -48,9 +51,9 @@ Resources:
       FunctionName: alexa-framework-for-n00bs
       Description: "This is a framework for n00bs so they don't need to learn alexa but still be able to create skills"
       Handler: main
-      Role: !GetAtt greengrassRole.Arn
+      Role: !GetAtt alexaFrameworkForn00bsRole.Arn
       Runtime: go1.x
-      MemorySize: 128
+      MemorySize: 512
       Timeout: 5
       CodeUri: ./source/deployment.zip
       Events:
@@ -59,6 +62,8 @@ Resources:
       Environment:
         Variables:
           ALEXA_APPLICATION_ID: !Ref AlexaApplicationID
+          BUCKET_NAME: !Ref BucketName
+
 
 #Outputs:
 #  lambdaarn:

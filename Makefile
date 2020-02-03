@@ -1,8 +1,11 @@
 
 ENVIRONMENT        ?= prod
 PROJECT            =  innovation
-STACK_NAME         =  Alexa-framework-for-n00bs
+STACK_NAME         =  alexa-framework-for-n00bs
 AWS_DEFAULT_REGION ?= eu-west-1
+ARTIFACTS_BUCKET   = dw-test-deploy-dev
+BUCKET_INTENT_FILES= alexa-framework-for-n00bs-intentfiles
+
 
 sam_package = aws cloudformation package \
                 --template-file sam.yaml \
@@ -17,6 +20,7 @@ sam_deploy = aws cloudformation deploy \
                         $(shell cat parameters.conf) \
                 --capabilities CAPABILITY_IAM \
                 --no-fail-on-empty-changeset
+sync_intent_files = aws s3 sync intents/ s3://$(BUCKET_INTENT_FILES)
 
 deploy:
 	@mkdir -p dist
@@ -25,6 +29,7 @@ deploy:
 	# sam
 	$(call sam_package)
 	$(call sam_deploy)
+	$(call sync_intent_files)
 	@rm -rf source/main
 
 clean:

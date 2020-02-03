@@ -1,0 +1,5 @@
+{
+	"source": "static",
+	"query": "",
+	"say": "This is the message alexa will read when the skill is opened and help is asked, having a introduction on what the skill can do is a good idea :-)"
+}

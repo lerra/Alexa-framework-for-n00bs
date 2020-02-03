@@ -2,19 +2,25 @@ package main
 
 import (
 	"context"
-	//"encoding/json"
-	"errors"
+	"encoding/json"
+//	"errors"
 	"log"
 	"os"
-	"math/rand"
-	"time"
+//	"math/rand"
+//	"time"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/ericdaugherty/alexa-skills-kit-golang"
+	_ "github.com/snowflakedb/gosnowflake"
+//    "github.com/aws/aws-sdk-go/aws"
+//  session2 "github.com/aws/aws-sdk-go/aws/session"
+//    "github.com/aws/aws-sdk-go/service/s3"
+ //   "github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 var a = &alexa.Alexa{ApplicationID: os.Getenv("ALEXA_APPLICATION_ID"), RequestHandler: &HelloWorld{}, IgnoreTimestamp: true}
@@ -56,7 +62,99 @@ func (h *HelloWorld) OnLaunch(context context.Context, request *alexa.Request, s
 func (h *HelloWorld) OnIntent(context context.Context, request *alexa.Request, session *alexa.Session, aContext *alexa.Context, response *alexa.Response) error {
 
 	log.Printf("OnIntent requestId=%s, sessionId=%s, intent=%s", request.RequestID, session.SessionID, request.Intent.Name)
-	
+
+	//var bucketName string
+	bucketName := os.Getenv("BUCKET_NAME")
+
+	cfg, err := external.LoadDefaultAWSConfig()
+	if err != nil {
+			return err
+	}
+	client := s3.New(cfg)
+
+	log.Printf("s3 GET object %s/%s", bucketName, request.Intent.Name)
+	result, err := client.GetObjectRequest(&s3.GetObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(request.Intent.Name),
+	}).Send()
+	if err != nil {
+			log.Printf("%s", request.Intent.Name)
+			return err
+	} 
+
+
+
+	s3objectBytes, err := ioutil.ReadAll(result.Body)
+    if err != nil {
+        panic(err)
+    }
+    // create file
+	var fileName string
+	fileName = "/tmp/" + request.Intent.Name
+    f, err := os.Create(fileName)
+    defer f.Close()
+    if err != nil {
+        panic(err)
+    }
+
+    bytesWritten, err := f.Write(s3objectBytes)
+    if err != nil {
+        panic(err)
+    }
+
+    //fmt.Printf("Fetched %d bytes for S3Object\n", bytesWritten)
+    fmt.Printf("successfully downloaded (%d bytes) data from %s/%s\n to %s", bytesWritten, bucketName, request.Intent.Name, fileName)
+
+    data, err := ioutil.ReadFile(fileName)
+    if err != nil {
+      fmt.Print(err)
+    }
+
+
+
+//	downloadIntentFileFromS3("alexaFrameworkForn00bs",request.Intent.Name)
+
+  
+	  // json data
+	//  fmt.Println(result)
+	  // unmarshall it
+	  
+
+    // define data structure 
+    type IntentStruct struct {
+		Source string
+		Query string
+		Say string
+	  }
+	 var intent IntentStruct
+
+	 err = json.Unmarshal(data, &intent)
+
+	  if err != nil {
+		  fmt.Println("error: ", err)
+	  }
+  
+	  if intent.Source == "static" {
+
+		fmt.Printf("INFO: %s is a static intent, Will say the following: %s\n", request.Intent.Name, intent.Say);
+		response.SetSimpleCard("HelloWorld", intent.Say)
+		response.SetOutputText(intent.Say)
+		response.SetRepromptText(intent.Say)
+
+		} else if intent.Source == "snowflake" {
+
+		fmt.Printf("INFO: %s is a snowflake intent, This is the template: %s and Will run the query: %s\n", request.Intent.Name, intent.Say, intent.Query);
+		response.SetSimpleCard("HelloWorld", intent.Say)
+		response.SetOutputText(intent.Say)
+		response.SetRepromptText(intent.Say)
+
+		} else {
+		fmt.Printf("ERROR: Got the following intent that failed (wrong structure or missing fields?) : %s\n", request.Intent.Name);
+	  }
+
+	  return nil
+	/*
+
 	switch request.Intent.Name {
 	case "GetTalentIntent":
 		speechText := "We have over 2200 talents globally"
@@ -109,6 +207,7 @@ func (h *HelloWorld) OnIntent(context context.Context, request *alexa.Request, s
 	}
 
 	return nil
+	*/
 }
 
 // OnSessionEnded called with a reqeust is received of type SessionEndedRequest
@@ -122,29 +221,3 @@ func (h *HelloWorld) OnSessionEnded(context context.Context, request *alexa.Requ
 func main() {
 	lambda.Start(Handle)
 }
-
-func getS3PhishingFile() error {
-	getS3File("wengyretail-dev-www","tv.html")
-	return nil
-}
-//https://lex-web-ui-codebuilddeploy-s0msjg9v0-webappbucket-x3k6d10fuf8i.s3.amazonaws.com/aws-config.js
-func getS3File(bucketName, key string) error {
-	cfg, err := external.LoadDefaultAWSConfig()
-	if err != nil {
-		return err
-	}
-	client := s3.New(cfg)
-
-	log.Printf("s3 GET object %s/%s", bucketName, key)
-	result, err := client.GetObjectRequest(&s3.GetObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(key),
-	}).Send()
-	if err != nil {
-		log.Printf("%s", err)
-		return err
-	}
-	fmt.Printf("result: %s", result)
-	return nil  
-}
-
