@@ -7,6 +7,18 @@ Parameters:
     
   AlexaApplicationID:
     Type: String
+  
+  KmsKey:
+    Type: String
+  
+  SecurityGorupId:
+    Type: String
+
+  SubnetId1:
+    Type: String
+
+  SubnetId2:
+    Type: String
 
 Resources:
   bucket:
@@ -31,8 +43,9 @@ Resources:
       Path: "/"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
       Policies:
-        - PolicyName: "s3"
+        - PolicyName: "alexa_for_n00bs_framework_s3_bucket"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -42,6 +55,29 @@ Resources:
                   - "s3:GetObject"
                   - "s3:ListBucket"
                 Resource: !Sub arn:aws:s3:::${BucketName}/*
+        - PolicyName: "alexa_for_n00bs_framework_ssm_params"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "ssm:GetParametersByPath"
+                  - "ssm:GetParameters"
+                  - "ssm:GetParameter"
+                Resource: 
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/config/alexa-for-n00bs/*
+        - PolicyName: "alexa_for_n00bs_framework_kms"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "kms:Decrypt"
+                Resource: !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${KmsKey}
+
+
 
 # lambda functions
 
@@ -63,6 +99,12 @@ Resources:
         Variables:
           ALEXA_APPLICATION_ID: !Ref AlexaApplicationID
           BUCKET_NAME: !Ref BucketName
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref SecurityGorupId
+        SubnetIds:
+          - !Ref SubnetId1
+          - !Ref SubnetId2
 
 
 #Outputs:
