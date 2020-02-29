@@ -4,14 +4,20 @@ Description: "Alexa framework for n00bs"
 Parameters:
   BucketName:
     Type: String
-    
+    Description: "The bucket where the intent file is located"
+
+  DebugOutput:
+    Type: Number
+    Description: "Used to enable debug output from the lambda function, 0=disable and 1=enable"
+
   AlexaApplicationID:
     Type: String
   
   KmsKey:
     Type: String
-  
-  SecurityGorupId:
+    Description: "The KMS key to decrypt the password for the external modules"
+
+  SecurityGroupId:
     Type: String
 
   SubnetId1:
@@ -99,9 +105,10 @@ Resources:
         Variables:
           ALEXA_APPLICATION_ID: !Ref AlexaApplicationID
           BUCKET_NAME: !Ref BucketName
+          DEBUG_OUTPUT: !Ref DebugOutput
       VpcConfig:
         SecurityGroupIds:
-          - !Ref SecurityGorupId
+          - !Ref SecurityGroupId
         SubnetIds:
           - !Ref SubnetId1
           - !Ref SubnetId2
